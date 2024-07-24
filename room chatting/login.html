@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous">
+    </script>
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login to ChatApp</h1>
+    <form id="loginForm" action="/login" method="POST">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+        <button type="submit">Login</button>
+        <button type="button" id="reg">Register</button>
+    </form>
+    <script>
+        const form = document.getElementById('loginForm');
+        const registerButton = document.getElementById('reg');
+
+        form.addEventListener('submit',function(event) {
+            const email=document.getElementById('email').value;
+            localStorage.setItem('email',email);
+            let formData = {'user': email};
+
+            $.ajax({url:"/getuser" , type:'GET' , data:formData , success : function(response) {
+            localStorage.setItem('username',response);
+
+            const username = localStorage.getItem('username');
+            formData = {'username' : username};
+
+            $.ajax({url:"/activity" , type:'PUT' , data:formData , success : function(response) {
+			//updating data in database
+        }}
+	)
+        }}
+    )
+})
+
+        registerButton.addEventListener('click' , function() {
+            window.location.href = "registration.html";
+        })
+    </script>
+</body>
+</html>

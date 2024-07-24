@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room Selection</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity= 
+    "sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" 
+    crossorigin="anonymous">
+</script> 
+    <script src="../main.js"></script>
+    <script src='room.html'></script>
+</head>
+<body> 
+    <form id="personForm" method="post" action="">
+    <h1 id="header">CHATTING WITH PERSON</h1> <br>
+    <p id="user">(signed in as xzy@gmail.com)</p> <br> <br>
+    <div id="messages"></div> <br> <br>
+        <input type="text" id="message" placeholder="Enter message" name="mess_age"/>
+        <input type="file" id="fileInput" />
+        <button id="Btn">Send</button>
+    </form>
+    <script>
+        const socket = io();
+        
+        const email=localStorage.getItem('email');
+        const username = localStorage.getItem('username');
+        const user=document.getElementById('user');
+	    user.innerHTML = `<h4><b>SIGNED IN AS</b> <b>${username}</b></h4>`;
+
+        const senderUserName =localStorage.getItem('senderUserName');
+        const person = localStorage.getItem('person');
+
+        const header = document.getElementById('header');
+        header.innerHTML = `<h1>CHATTING WITH <b>${senderUserName}</b><h1>`
+        
+
+        const sendBtn=document.getElementById('Btn');
+        const messageInput=document.getElementById('message');
+        const allMessages=document.getElementById('messages');
+        
+
+        socket.emit('new',username);
+
+        var mess_age = $('input[name=mess_age]').val();
+        let formData = {'senderUserName':senderUserName,'username':username};
+
+    const b64toBlob = (base, contentType='application/octet-stream', sliceSize=512) => {
+    const b64Data = base.split(',')[1];
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+    
+  const blob = new Blob(byteArrays, {type: contentType});
+  return blob;
+}
+
+function clearBox(elementID)
+{
+    document.getElementById(elementID).innerHTML = "";
+}
+
+formData = {'username': username , 'senderUserName' : senderUserName};
+$.ajax({url:"/getmessages" , type:'GET' , data:formData , success : function(response) {
+        for( let i=0 ; i < response.length ; i++) {
+           
+                    if (response[i].base64 == null) {
+                        if(response[i].status == 'true') {
+                            if(response[i].sender == senderUserName) {
+                        const message =   `<p>${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                        const p = document.createElement('p');
+                        p.innerHTML = message;
+                        allMessages.appendChild(p);
+                            }
+                        else {
+                        const message =   `<p style="color:green;">${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                        const p = document.createElement('p');
+                        p.innerHTML = message;
+                        allMessages.appendChild(p);} }
+                        else {
+                            if(response[i].sender == senderUserName) {
+                            const message =   `<p>${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                            const p = document.createElement('p');
+                            p.innerHTML = message;
+                            allMessages.appendChild(p);
+                            }
+                            else {
+                                console.log(response[i].status);
+                            const message =   `<p style="color:red;">${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                            const p = document.createElement('p');
+                            p.innerHTML = message;
+                            allMessages.appendChild(p);}
+                            }
+                        }
+              
+                    else {
+                      if (response[i].status == 'true') {
+                        if (response[i].sender == senderUserName) {
+                      const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span>${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                        }
+                    else {
+                        const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span style="color:green;">${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                    }
+                      
+                    }
+                    else {
+                        if (response[i].email == senderUserName) {
+                      const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span>${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                        }
+                        else {
+                      const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span style="color:red;">${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                        }
+                    }
+                }
+            }
+        }}
+	)
+        sendBtn.addEventListener('click', function() {
+                event.preventDefault();
+                const senderUserName = localStorage.getItem('senderUserName');
+
+                var mess_age = $('input[name=mess_age]').val();
+                console.log(mess_age);
+                if(!mess_age) {
+                const files = document.getElementById('fileInput').files
+                file = files[0];
+                const data = file;
+
+                const fileObj = {
+                name: file.name, 
+                data : data
+            };
+
+            var filereader = new FileReader();
+            filereader.readAsDataURL(file);
+            filereader.onload =  function (evt) {
+            const base64 =  evt.target.result;
+            const file_name = file.name;
+
+            formData = {'file':base64,'email':username,'person':senderUserName,'file_name':file_name ,'read':false };
+            $.ajax({url: "/addFile" , type: 'POST' , data:formData , success : function(response)
+                {
+                    console.log("data sent")
+                }
+                
+            })
+        }
+
+            socket.emit("upload", ({fileObj,username,senderUserName,file_type}));
+            $("#fileInput").val('');
+    }
+        else {
+            var mess_age = $('input[name=mess_age]').val();
+            const username = localStorage.getItem('username');
+            var formData = {'username':username,'message':mess_age,'senderUserName':senderUserName , 'read':false};
+            $.ajax({url: "/add" , type: 'POST' , data:formData , success : function(response)
+                {
+                    console.log("data sent");
+
+                }
+            })
+
+            const message=messageInput.value;
+            socket.emit('user-msg',({username,message,senderUserName}));
+            messageInput.value='';
+                }
+                
+        });
+        
+        socket.on('message', (formattedMsg) => {
+            const p = document.createElement('p');
+            p.innerHTML = formattedMsg;
+            allMessages.appendChild(p);   
+});
+
+        socket.on('newmessage', (newformattedMsg) => {
+            const p = document.createElement('p');
+            p.innerHTML = newformattedMsg;
+            allMessages.appendChild(p);   
+});
+ 
+        socket.on('receive' , ({fileObj,username,file_type}) => {
+            const blob = new Blob([fileObj.data], { type: 'application/octet-stream' });
+            const file = new File([blob], fileObj.name, { type: blob.type });
+            const fileNameElement = document.createElement('p');
+            const file_url  = URL.createObjectURL(file);
+            fileNameElement.innerHTML = `${username} : <b>${file.name}</b> <a href="${file_url}" download="${file.name}">(Download)</a>  <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a> `;
+            allMessages.appendChild(fileNameElement);
+            
+        });
+
+        socket.on('receiveme' , ({fileObj,username,file_type}) => {
+            const blob = new Blob([fileObj.data], { type: 'application/octet-stream' });
+            const file = new File([blob], fileObj.name, { type: blob.type });
+            const fileNameElement = document.createElement('p');
+            const file_url  = URL.createObjectURL(file);
+            fileNameElement.innerHTML = `${username} : <b>${file.name}</b> <a href="${file_url}" download="${file.name}">(Download)</a>  <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a> `;
+            allMessages.appendChild(fileNameElement);
+            
+        });
+        
+        window.addEventListener('focus', function() {
+            let formData = {'username':username , 'senderUserName' : senderUserName};
+            $.ajax({url:"/update" , type:'PUT' , data:formData , success : function(response) {
+			//updating data in database
+        }}
+    )
+ 
+     clearBox('messages');
+
+    $.ajax({url:"/getmessages" , type:'GET' , data:formData , success : function(response) {
+        for( let i=0 ; i < response.length ; i++) {
+           
+                    if (response[i].base64 == null) {
+                        if(response[i].status == 'true') {
+                            if(response[i].sender == senderUserName) {
+                        const message =   `<p>${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                        const p = document.createElement('p');
+                        p.innerHTML = message;
+                        allMessages.appendChild(p);
+                            }
+                        else {
+                        const message =   `<p style="color:green;">${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                        const p = document.createElement('p');
+                        p.innerHTML = message;
+                        allMessages.appendChild(p);} }
+                        else {
+                            if(response[i].sender == senderUserName) {
+                            const message =   `<p>${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                            const p = document.createElement('p');
+                            p.innerHTML = message;
+                            allMessages.appendChild(p);
+                            }
+                            else {
+                                console.log(response[i].status);
+                            const message =   `<p style="color:red;">${response[i].sentTime} : ${response[i].sender} : ${response[i].text}</p>`;
+                            const p = document.createElement('p');
+                            p.innerHTML = message;
+                            allMessages.appendChild(p);}
+                            }
+                        }
+              
+                    else {
+                      if (response[i].status == 'true') {
+                        if (response[i].sender == senderUserName) {
+                      const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span>${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                        }
+                    else {
+                        const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span style="color:green;">${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                    }
+                      
+                    }
+                    else {
+                        if (response[i].email == senderUserName) {
+                      const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span>${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                        }
+                        else {
+                      const blob = b64toBlob(response[i].base64);
+                      const file = new File([blob], response[i].fileName, { type: blob.type });
+                      const fileNameElement = document.createElement('p');
+                      const file_url = URL.createObjectURL(file)
+                      fileNameElement.innerHTML = `<span style="color:red;">${response[i].sentTime} ${response[i].sender}</span> : <b>${response[i].fileName}</b> <a href="${file_url}" download="${response[i].fileName}">(Download)</a> <a href="#" onclick="openFileInNewTab(${file_url})">(View)</a>`;
+                      allMessages.appendChild(fileNameElement);
+                        }
+                    }
+                }
+            }
+        }}
+	)
+
+})
+
+ </script>
+</body>
+</html>

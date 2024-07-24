@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./chatperson.html">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous">
+    </script>
+    <script src="../main.js"></script>
+    <title>Room</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+        .header {
+            flex: 0 0 auto;
+            padding: 1rem;
+        }
+        .content {
+            display: flex;
+            flex: 1 1 auto;
+            overflow: hidden;
+            border-right: 2px solid #000; 
+        }
+        .selector {
+            flex: 0 0 300px;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        #chatPanel {
+            flex: 1 1 auto;
+            overflow: auto;
+            padding: 1rem;
+        }
+		
+		li:hover  {
+			font-weight:bold;
+			cursor :pointer;
+		}
+    </style>
+</head>
+<body>
+
+	
+    <div class="header">
+        <h1>SELECT TO MESSAGE</h1>
+        <h2 id="user">(signed in as xzy@gmail.com)</h2> <br> 
+    </div>
+    <div class="content">
+        <div class="selector">
+            <div class="person">
+                <ul id="person">
+
+				</ul>
+            </div>
+            <div class="room">
+                <ul name="room" id="room">
+                    <li value="ROOM 1">ROOM 1</li> <br>
+                    <li value="ROOM 2">ROOM 2</li> <br>
+					<li value="ROOM 3">ROOM 3</li> <br>
+				</ul>
+            </div>
+        </div>
+		<div id="chatPanel"></div>
+    </div>
+	 
+    <script>
+        const username = localStorage.getItem('username');
+		const email = localStorage.getItem('email');
+        const user = document.getElementById('user');
+        user.innerHTML = `<h4><b>WELCOME ${username}</b></h4>`
+        const person = document.getElementById('person');
+        const room = document.getElementById('room');
+
+
+    function clearBox(elementID)
+{
+    document.getElementById(elementID).innerHTML = "";
+}
+
+
+        let formData = {'username' : username};
+        $.ajax({url:"/connect" , type:'PUT' , data:formData , success : function(response) {
+			//updating data in database
+        }}
+    )
+
+
+        formData = {email};
+        $.ajax({url:"/list" , type:'GET' , data:formData , success : function(response) {
+            var elm = document.getElementById('person'),
+            df = document.createDocumentFragment();
+			for (let i=0; i<response.length ; i++) {
+                if(response[i].activity == 'false') {
+                var listItem = document.createElement('li');
+				listItem.innerHTML = `<span style="color:red;">${response[i].name}</span>`;
+                df.appendChild(listItem);
+                }
+                else {
+                var listItem = document.createElement('li');
+				listItem.innerHTML = `<span style="color:green;">${response[i].name}</span>`;
+                df.appendChild(listItem);
+                }
+            }
+            elm.appendChild(df);   
+        }}
+    )
+
+
+        room.addEventListener('click' , function() {
+			const room = event.target.getAttribute('value');
+            localStorage.setItem('room', room);
+            formData = {'room' : room};
+            $.ajax({url:"/room" , type:'POST' , data:formData , success : function(response) {
+                document.getElementById("chatPanel").innerHTML='<object type="text/html" data="chatroom.html" style="width: 100%; height: 100%;"></object>';
+                
+        }}
+	)
+})
+        
+
+
+    person.addEventListener('click' , function() {
+	const person = event.target.textContent
+        console.log(person);
+        localStorage.setItem('person', person);
+		let formData = {'username':username , 'senderUserName' : person}
+       $.ajax({url:"/update" , type:'PUT' , data:formData , success : function(response) {
+			//updating data in database
+        }}
+	)
+
+    
+     formData = {'user' : person};
+       $.ajax({url:"/person" , type:'POST' , data:formData , success : function(response) {
+            localStorage.setItem('senderUserName', person);
+            document.getElementById("chatPanel").innerHTML='<object type="text/html" data="chatperson.html" style="width: 100%; height: 100%;"></object>';
+        }}
+	)
+})
+
+window.addEventListener('focus' , function() {
+    clearBox('person');
+
+    let formData = {email};
+        $.ajax({url:"/list" , type:'GET' , data:formData , success : function(response) {
+            var elm = document.getElementById('person'),
+            df = document.createDocumentFragment();
+			for (let i=0; i<response.length ; i++) {
+                if(response[i].activity == 'false') {
+                var listItem = document.createElement('li');
+				listItem.innerHTML = `<p style="color:red;">${response[i].name}</p>`;
+				listItem.setAttribute('value', response[i].name);
+                df.appendChild(listItem);
+                }
+                else {
+                var listItem = document.createElement('li');
+				listItem.innerHTML = `<span style="color:green;">${response[i].name}</span>`;
+				listItem.setAttribute('value', response[i].name);
+                df.appendChild(listItem);
+                }
+            }
+            elm.appendChild(df);   
+        }}
+    )
+  
+})
+
+window.addEventListener('beforeunload' , function() {
+    let formData = {'username' : username};
+        $.ajax({url:"/disconnect" , type:'PUT' , data:formData , success : function(response) {
+			//updating data in database
+        }}
+    )
+})
+
+    </script>
+</body>
+</html> 
